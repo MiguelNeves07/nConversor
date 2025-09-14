@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR" >
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>nConversor</title>
+  <style>
+    /* Reset e base */
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: white;
+      margin: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding-bottom: 40px;
+    }
+
+    .container {
+      max-width: 450px;
+      width: 100%;
+      text-align: center;
+      padding: 20px;
+      box-shadow: 0 0 10px #ccc;
+      border-radius: 12px;
+      background: #fafafa;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #007acc;
+    }
+
+    select,
+    input[type="number"],
+    button {
+      width: 90%;
+      max-width: 400px;
+      margin: 10px auto;
+      padding: 10px 14px;
+      font-size: 1rem;
+      border: 1px solid #bbb;
+      border-radius: 8px;
+      outline-offset: 2px;
+      outline-color: #007acc;
+      transition: border-color 0.3s;
+    }
+
+    select:focus,
+    input[type="number"]:focus,
+    button:focus {
+      border-color: #007acc;
+    }
+
+    button {
+      background-color: #007acc;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.3s;
+    }
+
+    button:hover:not(:disabled) {
+      background-color: #005f99;
+    }
+
+    button:disabled {
+      background-color: #999;
+      cursor: not-allowed;
+    }
+
+    .result {
+      margin-top: 25px;
+      font-weight: bold;
+      color: #228822;
+      word-wrap: break-word;
+    }
+
+    /* Container para botões lado a lado */
+    .btn-row {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-row button {
+      width: 48%;
+      max-width: 180px;
+    }
+
+    /* Responsividade */
+    @media (max-width: 480px) {
+      body {
+        margin: 10px;
+        padding-bottom: 20px;
+      }
+      .container {
+        padding: 15px;
+        box-shadow: none;
+      }
+      select,
+      input[type="number"],
+      button {
+        width: 100%;
+        max-width: none;
+      }
+      .btn-row button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>nConversor 🔁</h1>
+
+    <select id="categoria" onchange="atualizarUnidades()">
+      <option value="comprimento">📏 Comprimento</option>
+      <option value="massa">⚖️ Massa</option>
+      <option value="temperatura">🌡️ Temperatura</option>
+      <option value="dados">💾 Dados</option>
+      <option value="tempo">🕒 Tempo</option>
+      <option value="area">📐 Área</option>
+      <option value="velocidade">🚀 Velocidade</option>
+      <option value="volume">🧪 Volume</option>
+    </select>
+
+    <input type="number" id="valor" placeholder="Valor a converter" />
+
+    <select id="deUnidade"></select>
+    <select id="paraUnidade"></select>
+
+    <div class="btn-row">
+      <button onclick="converter()">Converter</button>
+      <button onclick="copiarResultado()" id="btnCopiar" disabled>Copiar Resultado</button>
+    </div>
+
+    <div class="result" id="resultado"></div>
+  </div>
+
+  <script>
+    const unidades = {
+      comprimento: {
+        "Nanômetro (nm)": 1e-9,
+        "Micrômetro (μm)": 1e-6,
+        "Milímetro (mm)": 1e-3,
+        "Centímetro (cm)": 1e-2,
+        "Decímetro (dm)": 1e-1,
+        "Metro (m)": 1,
+        "Decâmetro (dam)": 10,
+        "Hectômetro (hm)": 100,
+        "Quilômetro (km)": 1000,
+        "Polegada (in)": 0.0254,
+        "Pé (ft)": 0.3048,
+        "Jarda (yd)": 0.9144,
+        "Milha (mi)": 1609.34,
+        "Unidade astronômica (au)": 1.496e+11,
+        "Ano-luz (ly)": 9.461e+15,
+        "Parsec (pc)": 3.086e+16
+      },
+      massa: {
+        "Micrograma (µg)": 1e-6,
+        "Miligrama (mg)": 1e-3,
+        "Grama (g)": 1,
+        "Quilograma (kg)": 1000,
+        "Tonelada (t ou Mg)": 1e6,
+        "Onça (oz)": 28.3495,
+        "Libra (lb)": 453.592,
+        "Stone (st)": 6350.29,
+        "Tonelada curta (US ton)": 907184.74,
+        "Tonelada longa (UK ton)": 1016046.91
+      },
+      temperatura: ["Celsius", "Fahrenheit", "Kelvin", "Rankine", "Réaumur"],
+      dados: {
+        "Bit (b)": 1,
+        "Nibble (4 bits)": 4,
+        "Byte (B)": 8,
+        "Kibibyte (KiB)": 8192,
+        "Mebibyte (MiB)": 8388608,
+        "Gibibyte (GiB)": 8589934592,
+        "Tebibyte (TiB)": 8796093022208,
+        "Pebibyte (PiB)": 9007199254740992,
+        "Exbibyte (EiB)": 9223372036854775808,
+        "Zebibyte (ZiB)": 9.44473296573929e+21,
+        "Yobibyte (YiB)": 9.671406556917033e+24,
+        "Kilobyte (KB)": 8000,
+        "Megabyte (MB)": 8000000,
+        "Gigabyte (GB)": 8e+9,
+        "Terabyte (TB)": 8e+12,
+        "Petabyte (PB)": 8e+15,
+        "Exabyte (EB)": 8e+18,
+        "Zettabyte (ZB)": 8e+21,
+        "Yottabyte (YB)": 8e+24
+      },
+      tempo: {
+        "Nanosegundo (ns)": 1e-9,
+        "Microssegundo (µs)": 1e-6,
+        "Milissegundo (ms)": 1e-3,
+        "Segundo (s)": 1,
+        "Minuto (min)": 60,
+        "Hora (h)": 3600,
+        "Dia": 86400,
+        "Semana": 604800,
+        "Mês (30,44 dias)": 2629743.83,
+        "Ano (365,25 dias)": 31557600,
+        "Década": 315576000,
+        "Século": 3.15576e+9,
+        "Milênio": 3.15576e+10
+      },
+      area: {
+        "Milímetro quadrado (mm²)": 1e-6,
+        "Centímetro quadrado (cm²)": 1e-4,
+        "Metro quadrado (m²)": 1,
+        "Decâmetro quadrado (dam²)": 100,
+        "Hectômetro quadrado (hm²)": 10000,
+        "Quilômetro quadrado (km²)": 1e6,
+        "Polegada quadrada (in²)": 0.00064516,
+        "Pé quadrado (ft²)": 0.092903,
+        "Jarda quadrada (yd²)": 0.836127,
+        "Acre": 4046.86,
+        "Hectare": 10000,
+        "Milha quadrada (mi²)": 2.59e+6
+      },
+      velocidade: {
+        "Metro por segundo (m/s)": 1,
+        "Centímetro por segundo (cm/s)": 0.01,
+        "Quilômetro por hora (km/h)": 0.277778,
+        "Milha por hora (mph)": 0.44704,
+        "Pé por segundo (ft/s)": 0.3048,
+        "Pé por minuto (ft/min)": 0.00508,
+        "Nó (kn)": 0.514444,
+        "Mach": 340.29,
+        "Velocidade da luz (c)": 299792458
+      },
+      volume: {
+        "Mililitro (mL)": 1e-6,
+        "Centímetro cúbico (cm³)": 1e-6,
+        "Decilitro (dL)": 1e-4,
+        "Litro (L)": 0.001,
+        "Decalitro (daL)": 0.01,
+        "Hectolitro (hL)": 0.1,
+        "Metro cúbico (m³)": 1,
+        "Polegada cúbica (in³)": 1.6387e-5,
+        "Pé cúbico (ft³)": 0.0283168,
+        "Jarda cúbica (yd³)": 0.764555,
+        "Galão (US)": 0.00378541,
+        "Galão (UK)": 0.00454609,
+        "Quart (US)": 0.000946353,
+        "Pint (US)": 0.000473176,
+        "Copo (cup)": 0.00024,
+        "Onça líquida (fl oz)": 2.9574e-5,
+        "Colher de sopa (tbsp)": 1.4787e-5,
+        "Colher de chá (tsp)": 4.9289e-6,
+        "Barril (de petróleo)": 0.158987,
+        "Tambor (drum)": 0.208197,
+        "Balde (bucket)": 0.01
+      }
+    };
+
+    function atualizarUnidades() {
+      const cat = document.getElementById("categoria").value;
+      const de = document.getElementById("deUnidade");
+      const para = document.getElementById("paraUnidade");
+
+      let lista = unidades[cat];
+      if (Array.isArray(lista)) {
+        de.innerHTML = lista.map(u => `<option value="${u}">${u}</option>`).join("");
+        para.innerHTML = lista.map(u => `<option value="${u}">${u}</option>`).join("");
+      } else {
+        const chaves = Object.keys(lista);
+        de.innerHTML = chaves.map(u => `<option value="${u}">${u}</option>`).join("");
+        para.innerHTML = chaves.map(u => `<option value="${u}">${u}</option>`).join("");
+      }
+      document.getElementById("resultado").innerText = "";
+      document.getElementById("btnCopiar").disabled = true;
+      document.getElementById("valor").value = "";
+    }
+
+    function converter() {
+      const cat = document.getElementById("categoria").value;
+      const valor = parseFloat(document.getElementById("valor").value);
+      const de = document.getElementById("deUnidade").value;
+      const para = document.getElementById("paraUnidade").value;
+      const res = document.getElementById("resultado");
+
+      if (isNaN(valor)) {
+        res.innerText = "Digite um valor válido.";
+        document.getElementById("btnCopiar").disabled = true;
+        return;
+      }
+
+      if (cat === "temperatura") {
+        const result = converterTemperatura(valor, de, para);
+        res.innerText = `${result.toFixed(4)} ${para}`;
+      } else {
+        const unidade = unidades[cat];
+        const resultado = valor * (unidade[de] / unidade[para]);
+        res.innerText = `${resultado.toFixed(6)} ${para}`;
+      }
+
+      document.getElementById("btnCopiar").disabled = false;
+    }
+
+    function converterTemperatura(valor, de, para) {
+      const toCelsius = {
+        "Celsius": val => val,
+        "Fahrenheit": val => (val - 32) * 5/9,
+        "Kelvin": val => val - 273.15,
+        "Rankine": val => (val - 491.67) * 5/9,
+        "Réaumur": val => val * 1.25
+      };
+
+      const fromCelsius = {
+        "Celsius": val => val,
+        "Fahrenheit": val => val * 9/5 + 32,
+        "Kelvin": val => val + 273.15,
+        "Rankine": val => (val + 273.15) * 9/5,
+        "Réaumur": val => val * 0.8
+      };
+
+      return fromCelsius[para](toCelsius[de](valor));
+    }
+
+    function copiarResultado() {
+      const texto = document.getElementById("resultado").innerText;
+      if (!texto) return;
+      navigator.clipboard.writeText(texto)
+        .then(() => alert("Resultado copiado para a área de transferência!"))
+        .catch(() => alert("Erro ao copiar resultado."));
+    }
+
+    window.onload = atualizarUnidades;
+  </script>
+</body>
+</html>
